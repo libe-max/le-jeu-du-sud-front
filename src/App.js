@@ -4,6 +4,8 @@ import LoadingError from 'libe-components/lib/blocks/LoadingError'
 import ShareArticle from 'libe-components/lib/blocks/ShareArticle'
 import LibeLaboLogo from 'libe-components/lib/blocks/LibeLaboLogo'
 import ArticleMeta from 'libe-components/lib/blocks/ArticleMeta'
+import PageTitle from 'libe-components/lib/text-levels/PageTitle'
+import { parseTsv } from 'libe-utils'
 
 export default class App extends Component {
   /* * * * * * * * * * * * * * * * *
@@ -13,11 +15,14 @@ export default class App extends Component {
    * * * * * * * * * * * * * * * * */
   constructor () {
     super()
-    this.c = 'lblb-some-app'
+    this.c = 'le-jeu-du-sud'
     this.state = {
       loading_sheet: true,
       error_sheet: null,
       data_sheet: [],
+      step: 'choose origin',
+      origin: null,
+      current_city: null,
       keystrokes_history: [],
       konami_mode: false
     }
@@ -25,6 +30,8 @@ export default class App extends Component {
     this.fetchCredentials = this.fetchCredentials.bind(this)
     this.listenToKeyStrokes = this.listenToKeyStrokes.bind(this)
     this.watchKonamiCode = this.watchKonamiCode.bind(this)
+    this.setOrigin = this.setOrigin.bind(this)
+    this.voteFor = this.voteFor.bind(this)
   }
 
   /* * * * * * * * * * * * * * * * *
@@ -99,8 +106,19 @@ export default class App extends Component {
       const reach = await window.fetch(this.props.spreadsheet)
       if (!reach.ok) throw reach
       const data = await reach.text()
-      const parsedData = data // Parse sheet here
-      this.setState({ loading_sheet: false, error_sheet: null, data_sheet: parsedData })
+      const parsedData = parseTsv(data, [1])[0]
+      let randomlyFilteredData = [...parsedData]
+      while (randomlyFilteredData.length > 4) {
+        randomlyFilteredData[Math.floor(Math.random() * randomlyFilteredData.length)] = undefined
+        randomlyFilteredData = randomlyFilteredData.filter(e => e)
+      }
+      this.setState(current => ({
+        ...current,
+        loading_sheet: false,
+        error_sheet: null,
+        data_sheet: randomlyFilteredData,
+        current_city: randomlyFilteredData[0]
+      }))
       return data
     } catch (error) {
       if (error.status) {
@@ -142,6 +160,37 @@ export default class App extends Component {
 
   /* * * * * * * * * * * * * * * * *
    *
+   * SET ORIGIN
+   *
+   * * * * * * * * * * * * * * * * */
+  setOrigin () {
+    if (!this.$originSelect || !this.$originSelect.value) return
+    const origin = this.$originSelect.value
+    this.setState(current => ({ ...current, origin, step: 'vote' }))
+  }
+
+  /* * * * * * * * * * * * * * * * *
+   *
+   * VOTE FOR
+   *
+   * * * * * * * * * * * * * * * * */
+  voteFor (vote) {
+    const req = {
+      origin: this.state.origin,
+      city: this.state.current_city.city,
+      vote
+    }
+    window.fetch('/le-jeu-du-sud/vote', {
+      method: 'POST',
+      body: JSON.stringify(req),
+      headers: { 'Content-Type': 'application/json' }
+    }).then(res => res.ok ? res.json() : new Error(res.statusText))
+      .then(res => console.log(res))
+      .catch(err => console.log(err))
+  }
+
+  /* * * * * * * * * * * * * * * * *
+   *
    * RENDER
    *
    * * * * * * * * * * * * * * * * */
@@ -158,10 +207,33 @@ export default class App extends Component {
     if (state.error_sheet) return <div className={classes.join(' ')}><div className='lblb-default-apps-error'><LoadingError /></div></div>
 
     /* Display component */
-    return <div className={classes.join(' ')}>
-      App is ready.<br />
-      - fill spreadsheet field in config.js<br />
-      - display it's content via state.data_sheet
+    return <div
+      className={classes.join(' ')}
+      style={{ marginTop: '30px' }}>
+      {state.step === 'choose origin' && <div>
+        <select ref={n => this.$originSelect = n}>
+          <option value='Auvergne-Rhône-Alpes'>Auvergne-Rhône-Alpes</option>
+          <option value='Bourgogne-Franche-Comté'>Bourgogne-Franche-Comté</option>
+          <option value='Bretagne'>Bretagne</option>
+          <option value='Centre-Val de Loire'>Centre-Val de Loire</option>
+          <option value='Corse'>Corse</option>
+          <option value='Grand Est'>Grand Est</option>
+          <option value='Hauts-de-France'>Hauts-de-France</option>
+          <option value='Île-de-France'>Île-de-France</option>
+          <option value='Normandie'>Normandie</option>
+          <option value='Nouvelle-Aquitaine'>Nouvelle-Aquitaine</option>
+          <option value='Occitanie'>Occitanie</option>
+          <option value='Pays de la Loire'>Pays de la Loire</option>
+          <option value="Provence-Alpes-Côte d'Azur">Provence-Alpes-Côte d'Azur</option>
+        </select>
+        <button onClick={this.setOrigin}>OK</button>
+      </div>}
+      {state.step === 'vote' && <div>
+        <PageTitle>{state.current_city.city}</PageTitle>
+        <button onClick={e => this.voteFor('north')}>Nord</button>
+        <button onClick={e => this.voteFor('south')}>Sud</button>
+        <button onClick={e => this.voteFor(null)}>Je ne connais pas cette ville</button>
+      </div>}
       <div className='lblb-default-apps-footer'>
         <ShareArticle short iconsOnly tweet={props.meta.tweet} url={props.meta.url} />
         <ArticleMeta

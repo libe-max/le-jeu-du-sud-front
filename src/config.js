@@ -3,13 +3,13 @@ const currentHostname = typeof window !== 'undefined' ? window.location.hostname
 
 const config = {
   meta: {
-    author: 'Maxime Fabas',
-    title: 'Libé apps template',
+    author: 'Libé Labo',
+    title: 'Le jeu du sud',
     url: '',
     description: '',
     image: '',
     xiti_id: 'test',
-    tweet: 'Some tweet text',
+    tweet: '',
   },
   tracking: {
     active: false,
@@ -23,8 +23,8 @@ const config = {
   api_url: process.env.NODE_ENV === 'production'
     ? 'https://libe-labo-2.site/api'
     : `${currentProtocol}//${currentHostname}:3004/api`,
-  stylesheet: 'libe-apps-template.css', // The name of the css file hosted at ${statics_url}/styles/apps/
-  spreadsheet: undefined // The spreadsheet providing data to the app
+  stylesheet: 'le-jeu-du-sud.css', // The name of the css file hosted at ${statics_url}/styles/apps/
+  spreadsheet: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSivm-tuzpFXhn2gyLwFPlRIUv7t4PagujGTZb04aCwnrrD7gXGQGhUjjmwUFXva3Kb7oHtdjRm9_i1/pub?gid=0&single=true&output=tsv' // The spreadsheet providing data to the app
 }
 
 module.exports = config
