@@ -30,6 +30,6 @@
   "devDependencies": {
     "cheerio": "^1.0.0-rc.3",
     "snazzy": "^8.0.0",
-    "standard": "^14.3.3"
+    "standard": "^14.3.4"
   }
 }
